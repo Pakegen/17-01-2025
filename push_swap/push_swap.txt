@@ -1,0 +1,1027 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   arguments.c                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 00:23:12 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 01:39:54 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+void free_split(char **split)
+{
+    int i;
+
+    i = 0;
+    while (split[i] != NULL)
+    {
+        free(split[i]);
+        i++;
+    }
+    free(split);
+}
+
+
+static int contains_duplicates(int *numbers, int size)
+{
+    int i;
+    int j;
+
+    i = 0;
+    while (i < size)
+    {
+        j = i + 1;
+        while (j < size)
+        {
+            if (numbers[i] == numbers[j])
+            {
+                return 1;
+            }
+            j++;
+        }
+        i++;
+    }
+    return 0;
+}
+
+static int *handle_single_argument(char *arg, int *count)
+{
+    char **split;
+    int *numbers;
+    int i;
+
+    split = ft_split(arg, ' ');
+    if (!split)
+    {
+        return NULL;
+    }
+
+    *count = count_words(split);
+    numbers = malloc(sizeof(int) * (*count));
+    if (!numbers)
+    {
+        free_split(split);
+        exit(1);
+    }
+
+    i = 0;
+    while (i < *count)
+    {
+        numbers[i] = ft_atoi(split[i]);
+        i++;
+    }
+    free_split(split);
+    return numbers;
+}
+
+static int *handle_multiple_arguments(char **args, int count)
+{
+    int *numbers;
+    int i;
+
+    numbers = malloc(sizeof(int) * count);
+    if (!numbers)
+    {
+        exit(1);
+    }
+
+    i = 0;
+    while (i < count)
+    {
+        numbers[i] = ft_atoi(args[i]);
+        i++;
+    }
+
+    return numbers;
+}
+
+int *parse_arguments(int argc, char **argv)
+{
+    int *numbers;
+    int count;
+
+    numbers = NULL;
+    count = 0;
+
+    if (argc == 2)
+    {
+        numbers = handle_single_argument(argv[1], &count);
+    }
+    else
+    {
+        count = argc - 1;
+        numbers = handle_multiple_arguments(&argv[1], count);
+    }
+
+    if (!numbers)
+    {
+        ft_printf("Error\n");
+        return NULL;
+    }
+
+    if (contains_duplicates(numbers, count))
+    {
+        free(numbers);
+        ft_printf("Error\n");
+        return NULL;
+    }
+    
+    
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   cost_calculations.c                                :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 00:00:27 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 11:04:25 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+int calculate_cost(t_list *node, t_list *a, t_list *b)
+{
+    int pos_a;
+    int pos_b;
+    int cost_a;
+    int cost_b;
+
+    pos_a = find_position(node, a);
+    pos_b = find_target_position(node, b);
+
+    cost_a = pos_a;
+    if (pos_a > ft_lstsize(a) / 2)
+        cost_a = ft_lstsize(a) - pos_a;
+
+    cost_b = pos_b;
+    if (pos_b > ft_lstsize(b) / 2)
+        cost_b = ft_lstsize(b) - pos_b;
+
+    ft_printf("Node: %d, Cost A: %d, Cost B: %d, Total: %d\n",
+              *(int *)node->content, cost_a, cost_b, cost_a + cost_b);
+
+    return cost_a + cost_b;
+}
+
+
+
+int find_position(t_list *node, t_list *stack)
+{
+    t_list *current;
+    int position;
+
+    current = stack;
+    position = 0;
+    while (current)
+    {
+        if (current == node)
+        {
+            return position;
+        }
+        position++;
+        current = current->next;
+    }
+    return -1;
+}
+
+int find_target_position(t_list *node, t_list *stack)
+{
+    t_list *current;
+    int value;
+    int position;
+    int max;
+    int min;
+
+    if (!stack)
+        return (0); // Cas de pile vide.
+
+    value = *(int *)node->content;
+    max = find_max(stack);
+    min = find_min(stack);
+
+    // Cas où l'élément est le plus grand ou le plus petit
+    if (value > max || value < min)
+    {
+        position = 0;
+        current = stack;
+        while (*(int *)current->content != max)
+        {
+            position++;
+            current = current->next;
+        }
+        return (position + 1);
+    }
+
+    // Cas général
+    position = 0;
+    current = stack;
+    while (current)
+    {
+        int curr_val = *(int *)current->content;
+        int next_val;
+
+        if (current->next)
+            next_val = *(int *)current->next->content;
+        else
+            next_val = *(int *)stack->content;
+
+        if (value > curr_val && value < next_val)
+            break;
+
+        position++;
+        current = current->next;
+    }
+    return (position);
+}
+
+
+void push_back_to_a(t_list **a, t_list **b)
+{
+    int position;
+
+    while (*b)
+    {
+        position = find_insert_position(*a, *(int *)(*b)->content);
+
+        if (position <= ft_lstsize(*a) / 2)
+        {
+            while (position--)
+                ra(a);
+        }
+        else
+        {
+            position = ft_lstsize(*a) - position;
+            while (position--)
+                rra(a);
+        }
+
+        pa(b, a);
+    }
+}
+
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 00:43:56 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 01:21:11 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+void free_stack(t_list **stack)
+{
+    t_list *current;
+    t_list *next;
+
+    current = *stack;
+    while (current)
+    {
+        next = current->next;
+        free(current->content); // Libère l'entier dupliqué
+        free(current);          // Libère le nœud
+        current = next;
+    }
+    *stack = NULL;
+}
+
+int main(int argc, char **argv)
+{
+    t_list *stack_a;
+    t_list *stack_b;
+    int *numbers;
+    int count;
+
+    if (argc < 2)
+        return 0;
+    numbers = parse_arguments(argc, argv);
+    if (!numbers)
+        return(ft_printf("Error\n"), 1);
+    if (argc == 2)
+        count = count_words(ft_split(argv[1], ' '));
+    else
+        count = argc - 1;
+    stack_a = NULL;
+    stack_b = NULL;
+    populate_stack(&stack_a, numbers, count);
+    free(numbers);
+    if (is_sorted(stack_a))
+        return(free_stack(&stack_a), 0);
+    push_swap(stack_a, stack_b);
+    free_stack(&stack_a);
+    free_stack(&stack_b);
+    return (0);
+}
+
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   push_swap.h                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/15 23:58:27 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 10:47:19 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#ifndef PUSH_SWAP_H
+# define PUSH_SWAP_H
+
+# include <stdlib.h>
+# include <unistd.h>
+# include "../utils/libft/libft.h"
+
+
+// Gestion de la mémoire
+void free_split(char **split);
+
+// Prototypes des fonctions principales
+int *parse_arguments(int argc, char **argv);
+int count_words(char **split);
+
+// Fonctions liées aux piles
+void populate_stack(t_list **stack, int *numbers, int size);
+void free_stack(t_list **stack);
+int is_sorted(t_list *stack);
+void print_stack(t_list *stack);
+
+// Opérations sur les piles
+void sa(t_list **a);
+void sb(t_list **b);
+void ss(t_list **a, t_list **b);
+void pb(t_list **a, t_list **b);
+void pa(t_list **a, t_list **b);
+void ra(t_list **a);
+void rb(t_list **b); // Ajout de rb
+void rr(t_list **a, t_list **b);
+void rra(t_list **a);
+void rrb(t_list **b); // Ajout de rrb
+void rrr(t_list **a, t_list **b);
+
+// Algorithme principal
+void push_swap(t_list *a, t_list *b);
+void sort_two(t_list **a);
+void sort_three(t_list **a);
+
+// Calcul des coûts et positions
+int calculate_cost(t_list *node, t_list *a, t_list *b);
+t_list *find_cheapest_to_push(t_list *a, t_list *b);
+int find_position(t_list *node, t_list *stack);
+int find_target_position(t_list *node, t_list *stack);
+int find_insert_position(t_list *a, int value);
+int find_min_position(t_list *a); // Ajout de find_min_position
+
+// Utilitaires de tri
+void push_to_b_sorted(t_list **a, t_list **b);
+void align_stack(t_list **a);
+void push_back_to_a(t_list **a, t_list **b);
+
+int find_max(t_list *stack);
+int find_min(t_list *stack);
+void push_swap_small(t_list **a, t_list **b);
+
+#endif
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   sorting.c                                          :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 00:08:51 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 11:00:15 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+int find_min_position(t_list *a)
+{
+    t_list *current = a;
+    int min = *(int *)current->content;
+    int position = 0;
+    int index = 0;
+
+    while (current)
+    {
+        if (*(int *)current->content < min)
+        {
+            min = *(int *)current->content;
+            position = index;
+        }
+        current = current->next;
+        index++;
+    }
+    return position;
+}
+
+
+void sort_two(t_list **a)
+{
+    if (*(int *)(*a)->content > *(int *)(*a)->next->content)
+    {
+        sa(a);
+    }
+}
+
+void sort_three(t_list **a)
+{
+    int first = *(int *)(*a)->content;
+    int second = *(int *)(*a)->next->content;
+    int third = *(int *)(*a)->next->next->content;
+
+    if (first > second && second < third && first < third)
+        sa(a);
+    else if (first > second && second > third)
+    {
+        sa(a);
+        rra(a);
+    }
+    else if (first > second && second < third && first > third)
+        ra(a);
+    else if (first < second && second > third && first < third)
+    {
+        rra(a);
+        sa(a);
+    }
+    else if (first < second && second > third && first > third)
+        rra(a);
+}
+
+void push_swap(t_list *a, t_list *b)
+{
+    if (ft_lstsize(a) <= 5)
+    {
+        push_swap_small(&a, &b);
+        return;
+    }
+
+    // Logique générique pour les grandes piles
+    while (ft_lstsize(a) > 3)
+        push_to_b_sorted(&a, &b);
+
+    sort_three(&a);
+    push_back_to_a(&a, &b);
+    align_stack(&a);
+}
+
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   sorting_utils.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 01:32:07 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 11:03:58 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+int find_position_in_b(t_list *b, int value)
+{
+    t_list *current;
+    int position;
+
+    current = b;
+    position = 0;
+
+    while (current)
+    {
+        if (*(int *)current->content < value)
+        {
+            return position;
+        }
+        position++;
+        current = current->next;
+    }
+    return position;
+}
+
+void push_to_b_sorted(t_list **a, t_list **b)
+{
+    t_list *cheapest;
+    int cost_a;
+    int cost_b;
+
+    while (ft_lstsize(*a) > 3)
+    {
+        cheapest = find_cheapest_to_push(*a, *b);
+        cost_a = calculate_cost(cheapest, *a, *b);
+        cost_b = calculate_cost(cheapest, *b, *a);
+
+        // Appliquer des rotations combinées si possible
+        while (cost_a > 0 && cost_b > 0)
+        {
+            if (cost_a <= ft_lstsize(*a) / 2 && cost_b <= ft_lstsize(*b) / 2)
+            {
+                rr(a, b);
+                cost_a--;
+                cost_b--;
+            }
+            else if (cost_a > ft_lstsize(*a) / 2 && cost_b > ft_lstsize(*b) / 2)
+            {
+                rrr(a, b);
+                cost_a--;
+                cost_b--;
+            }
+            else
+                break;
+        }
+
+        // Finir les rotations individuelles
+        while (cost_a > 0)
+        {
+            if (cost_a <= ft_lstsize(*a) / 2)
+                ra(a);
+            else
+                rra(a);
+            cost_a--;
+        }
+        while (cost_b > 0)
+        {
+            if (cost_b <= ft_lstsize(*b) / 2)
+                rb(b);
+            else
+                rrb(b);
+            cost_b--;
+        }
+
+        pb(a, b);
+    }
+}
+
+void align_stack(t_list **a)
+{
+    int min_position;
+    int size;
+
+    size = ft_lstsize(*a);
+    min_position = find_min_position(*a);
+
+    if (min_position <= size / 2)
+    {
+        while (min_position > 0)
+        {
+            ra(a);
+            min_position--;
+        }
+    }
+    else
+    {
+        min_position = size - min_position;
+        while (min_position > 0)
+        {
+            rra(a);
+            min_position--;
+        }
+    }
+}
+
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   stack_operations.c                                 :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/15 23:21:32 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 10:55:57 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+void sa(t_list **a)
+{
+    t_list *temp;
+
+    if (!*a || !(*a)->next)
+    {
+        return;
+    }
+
+    temp = *a;
+    *a = (*a)->next;
+    temp->next = (*a)->next;
+    (*a)->next = temp;
+
+    ft_printf("sa\n");  // Toujours suivi d'un saut de ligne
+}
+
+void pb(t_list **a, t_list **b)
+{
+    t_list *temp;
+
+    if (!*a)
+    {
+        return;
+    }
+
+    temp = *a;
+    *a = (*a)->next;
+    temp->next = *b;
+    *b = temp;
+
+    ft_printf("pb\n");
+    print_stack(*a); // Affiche la pile A
+    print_stack(*b); // Affiche la pile B
+}
+
+void pa(t_list **a, t_list **b)
+{
+    t_list *temp;
+
+    if (!b || !*b)
+        return;
+
+    temp = *b;
+    *b = (*b)->next;
+    temp->next = *a;
+    *a = temp;
+    ft_printf("pa\n");
+}
+
+
+void ra(t_list **a)
+{
+    t_list *first;
+    t_list *last;
+
+    if (!a || !*a || !(*a)->next)
+        return;
+
+    first = *a;
+    *a = (*a)->next;
+    first->next = NULL;
+
+    last = *a;
+    while (last->next)
+        last = last->next;
+
+    last->next = first;
+    ft_printf("ra\n");
+}
+
+void rra(t_list **a)
+{
+    t_list *prev;
+    t_list *last;
+
+    if (!*a || !(*a)->next)
+    {
+        return;
+    }
+
+    prev = NULL;
+    last = *a;
+    while (last->next)
+    {
+        prev = last;
+        last = last->next;
+    }
+    prev->next = NULL;
+    last->next = *a;
+    *a = last;
+
+    ft_printf("rra\n");
+}
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   stack_operations_2.c                               :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 01:43:28 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 01:43:41 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+void rb(t_list **b)
+{
+    if (!b || !*b || !(*b)->next)
+        return;
+
+    t_list *first = *b;
+    t_list *last = *b;
+
+    while (last->next)
+        last = last->next;
+
+    *b = first->next;
+    first->next = NULL;
+    last->next = first;
+
+    ft_printf("rb\n");
+}
+
+void rrb(t_list **b)
+{
+    if (!b || !*b || !(*b)->next)
+        return;
+
+    t_list *prev = NULL;
+    t_list *last = *b;
+
+    while (last->next)
+    {
+        prev = last;
+        last = last->next;
+    }
+
+    if (prev)
+        prev->next = NULL;
+
+    last->next = *b;
+    *b = last;
+
+    ft_printf("rrb\n");
+}
+
+
+void rr(t_list **a, t_list **b)
+{
+    ra(a); // Appelle la rotation vers le haut de stack_a
+    rb(b); // Appelle la rotation vers le haut de stack_b
+
+    ft_printf("rr\n"); // Affiche l'opération
+}
+
+
+void rrr(t_list **a, t_list **b)
+{
+    rra(a); // Appelle la rotation inversée de stack_a
+    rrb(b); // Appelle la rotation inversée de stack_b
+
+    ft_printf("rrr\n"); // Affiche l'opération
+}
+
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   utils.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/15 23:20:49 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 10:54:25 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+int find_insert_position(t_list *a, int value)
+{
+    t_list *current;
+    int position;
+
+    current = a;
+    position = 0;
+
+    while (current)
+    {
+        if (*(int *)current->content > value)
+            break;
+        position++;
+        current = current->next;
+    }
+    return position;
+}
+
+void populate_stack(t_list **stack, int *numbers, int size)
+{
+    t_list *new_node;
+    int *value;
+    int i;
+
+    i = size - 1;
+    while (i >= 0)
+    {
+        value = malloc(sizeof(int));
+        if (!value)
+        {
+            free_stack(stack);
+            exit(1);
+        }
+        *value = numbers[i];
+        new_node = ft_lstnew(value);
+        if (!new_node)
+        {
+            free(value);
+            free_stack(stack);
+            exit(1);
+        }
+        ft_lstadd_front(stack, new_node);
+        i--;
+    }
+}
+
+int is_sorted(t_list *stack)
+{
+    t_list *current;
+
+    if (!stack || !stack->next)
+    {
+        return 1;
+    }
+
+    current = stack;
+    while (current->next)
+    {
+        if (*(int *)current->content > *(int *)current->next->content)
+        {
+            return 0;
+        }
+        current = current->next;
+    }
+    return 1;
+}
+
+void print_stack(t_list *stack)
+{
+    t_list *current;
+
+    current = stack;
+    while (current)
+    {
+        ft_printf("%d ", *(int *)current->content);
+        current = current->next;
+    }
+    ft_printf("\n");
+}
+
+int count_words(char **split)
+{
+    int count;
+    char **temp;
+
+    count = 0;
+    temp = split;
+    while (*temp != NULL)
+    {
+        count++;
+        temp++;
+    }
+    return count;
+}
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   min_max.c                                          :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 11:15:36 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 11:16:13 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+int find_max(t_list *stack)
+{
+    int max;
+    t_list *current;
+
+    if (!stack)
+        return (0); // Ou une autre valeur par défaut
+    current = stack;
+    max = *(int *)current->content;
+    while (current)
+    {
+        if (*(int *)current->content > max)
+            max = *(int *)current->content;
+        current = current->next;
+    }
+    return (max);
+}
+
+int find_min(t_list *stack)
+{
+    int min;
+    t_list *current;
+
+    if (!stack)
+        return (0); // Ou une autre valeur par défaut
+    current = stack;
+    min = *(int *)current->content;
+    while (current)
+    {
+        if (*(int *)current->content < min)
+            min = *(int *)current->content;
+        current = current->next;
+    }
+    return (min);
+}
+
+void push_swap_small(t_list **a, t_list **b)
+{
+    int min_position;
+
+    while (ft_lstsize(*a) > 3)
+    {
+        min_position = find_min_position(*a);
+
+        if (min_position <= ft_lstsize(*a) / 2)
+        {
+            while (min_position--)
+                ra(a);
+        }
+        else
+        {
+            min_position = ft_lstsize(*a) - min_position;
+            while (min_position--)
+                rra(a);
+        }
+
+        pb(a, b);
+    }
+
+    sort_three(a);
+
+    while (*b)
+        pa(b, a);
+}
+
+
+////////////////////////////////////////
+MAKEFILE
+
+# Nom de l'exécutable
+NAME = push_swap
+
+# Dossiers
+SRC_DIR = src
+OBJ_DIR = obj
+LIBFT_DIR = utils/libft
+INCLUDE_DIR = includes
+
+# Compilation
+CC = cc
+CFLAGS = -Wall -Wextra -Werror
+
+# Sources
+SRCS = src/main.c \
+       src/utils.c \
+       src/stack_operations.c \
+       src/sorting.c \
+       src/arguments.c \
+       src/cost_calculations.c \
+	   src/stack_operations_2.c\
+	   src/min_max.c\
+       src/sorting_utils.c
+
+OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
+
+# Commandes
+all: $(NAME)
+
+$(NAME): $(OBJS) $(LIBFT_DIR)/libft.a
+	$(CC) $(CFLAGS) -o $(NAME) $(OBJS) -L$(LIBFT_DIR) -lft
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+
+$(LIBFT_DIR)/libft.a:
+	@$(MAKE) -C $(LIBFT_DIR)
+
+clean:
+	rm -rf $(OBJ_DIR)
+	@$(MAKE) -C $(LIBFT_DIR) clean
+
+fclean: clean
+	rm -f $(NAME)
+	@$(MAKE) -C $(LIBFT_DIR) fclean
+
+re: fclean all
+
+.PHONY: all clean fclean re
+
+
+
+    return numbers;
+}
+

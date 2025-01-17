@@ -1,0 +1,693 @@
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    fichier.txt                                        :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2025/01/16 14:39:24 by qacjl             #+#    #+#              #
+#    Updated: 2025/01/16 16:57:38 by qacjl            ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
+#include "push_swap.h"
+
+t_list	*parse_args(char **argv)
+{
+	t_list	*stack_a;
+	char	**temp;
+	int		index;
+	int		number;
+
+	stack_a = NULL;
+	temp = split_string(argv[1], ' ');
+	index = 0;
+	while (temp[index])
+	{
+		number = parse_number_split(temp[index], temp, &stack_a);
+		add_to_list(&stack_a, create_node(number));
+		index++;
+	}
+	free_split(temp);
+	return (stack_a);
+}
+
+t_list	*check_args(int argc, char **argv)
+{
+	t_list	*stack_a;
+	int		index;
+	int		number;
+
+	stack_a = NULL;
+	index = 1;
+	if (argc == 1)
+		exit(0);
+	if (argc < 2)
+		print_error();
+	if (argc == 2)
+		stack_a = parse_args(argv);
+	else
+	{
+		while (index < argc)
+		{
+			number = parse_number(argv[index], &stack_a);
+			add_to_list(&stack_a, create_node(number));
+			index++;
+		}
+	}
+	return (stack_a);
+}
+
+#include "push_swap.h"
+
+int	parse_number_split(const char *str, char **split, t_list **stack)
+{
+	int		sign;
+	long	result;
+
+	sign = 1;
+	result = 0;
+	while (*str == ' ' || (*str >= '\t' && *str <= '\r'))
+		str++;
+	if (*str == '-' || *str == '+')
+	{
+		if (*str == '-')
+			sign = -1;
+		str++;
+	}
+	while (*str)
+	{
+		if (*str < '0' || *str > '9')
+			free_all(split, stack);
+		result = result * 10 + (*str - '0');
+		if ((sign * result) > 2147483647 || (sign * result) < -2147483648)
+			free_all(split, stack);
+		str++;
+	}
+	return ((int)(sign * result));
+}
+
+#include "push_swap.h"
+
+int	parse_number(const char *str, t_list **stack)
+{
+	int		sign;
+	long	result;
+
+	sign = 1;
+	result = 0;
+	while (*str == ' ' || (*str >= '\t' && *str <= '\r'))
+		str++;
+	if (*str == '-' || *str == '+')
+	{
+		if (*str == '-')
+			sign = -1;
+		str++;
+	}
+	while (*str)
+	{
+		if (*str < '0' || *str > '9')
+			free_list(stack);
+		result = result * 10 + (*str - '0');
+		if ((sign * result) > 2147483647 || (sign * result) < -2147483648)
+			free_list(stack);
+		str++;
+	}
+	return ((int)(sign * result));
+}
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   errors_utils.c                                     :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 14:39:50 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 16:54:39 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+void	print_error(void)
+{
+	write(2, "Error\n", 6);
+	exit(1);
+}
+
+void	free_list(t_list **stack)
+{
+	t_list	*tmp;
+
+	if (!stack)
+		return ;
+	while (*stack)
+	{
+		tmp = (*stack)->next;
+		free(*stack);
+		*stack = tmp;
+	}
+}
+
+void	free_split(char **split)
+{
+	int	index;
+
+	index = 0;
+	while (split[index])
+	{
+		free(split[index]);
+		index++;
+	}
+	free(split);
+}
+
+void	free_all(char **split, t_list **stack)
+{
+	free_split(split);
+	free_list(stack);
+	print_error();
+}
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   list_utils_2.c                                     :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 14:50:04 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 14:59:19 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+t_list	*ft_lstlast(t_list *stack)
+{
+	t_list	*current;
+
+	current = stack;
+	if (!current)
+		return (NULL);
+	while (current->next)
+		current = current->next;
+	return (current);
+}
+
+int	check_duplicates(t_list *stack)
+{
+	t_list	*current;
+	t_list	*compare;
+
+	current = stack;
+	while (current)
+	{
+		compare = current->next;
+		while (compare)
+		{
+			if (current->num == compare->num)
+				return (1);
+			compare = compare->next;
+		}
+		current = current->next;
+	}
+	return (0);
+}
+
+int	is_sorted(t_list *stack)
+{
+	while (stack && stack->next)
+	{
+		if (stack->num > stack->next->num)
+			return (0);
+		stack = stack->next;
+	}
+	return (1);
+}
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   list_utils.c                                       :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 14:40:15 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 14:50:42 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+t_list	*create_node(long number)
+{
+	t_list	*new_node;
+
+	new_node = malloc(sizeof(t_list));
+	if (!new_node)
+		print_error();
+	new_node->num = number;
+	new_node->next = NULL;
+	return (new_node);
+}
+
+void	add_to_list(t_list **stack, t_list *new_node)
+{
+	t_list	*last_node;
+
+	if (!stack || !new_node)
+		return ;
+	if (!*stack)
+		*stack = new_node;
+	else
+	{
+		last_node = ft_lstlast(*stack);
+		last_node->next = new_node;
+	}
+}
+
+int	find_min(t_list *stack)
+{
+	int	min;
+
+	min = stack->num;
+	while (stack)
+	{
+		if (stack->num < min)
+			min = stack->num;
+		stack = stack->next;
+	}
+	return (min);
+}
+
+int	find_max(t_list *stack)
+{
+	int	max;
+
+	max = stack->num;
+	while (stack)
+	{
+		if (stack->num > max)
+			max = stack->num;
+		stack = stack->next;
+	}
+	return (max);
+}
+
+int	list_size(t_list *stack)
+{
+	int	size;
+
+	size = 0;
+	while (stack)
+	{
+		size++;
+		stack = stack->next;
+	}
+	return (size);
+}
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   operations_basic.c                                 :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 14:40:35 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 14:40:39 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+void	swap_a(t_list **stack_a, int silent)
+{
+	t_list	*tmp;
+
+	if (!*stack_a || !(*stack_a)->next)
+		return ;
+	tmp = *stack_a;
+	*stack_a = (*stack_a)->next;
+	tmp->next = (*stack_a)->next;
+	(*stack_a)->next = tmp;
+	if (!silent)
+		write(1, "sa\n", 3);
+}
+
+void	swap_b(t_list **stack_b, int silent)
+{
+	t_list	*tmp;
+
+	if (!*stack_b || !(*stack_b)->next)
+		return ;
+	tmp = *stack_b;
+	*stack_b = (*stack_b)->next;
+	tmp->next = (*stack_b)->next;
+	(*stack_b)->next = tmp;
+	if (!silent)
+		write(1, "sb\n", 3);
+}
+
+void	swap_both(t_list **stack_a, t_list **stack_b, int silent)
+{
+	swap_a(stack_a, 1);
+	swap_b(stack_b, 1);
+	if (!silent)
+		write(1, "ss\n", 3);
+}
+
+void	push_a(t_list **stack_a, t_list **stack_b, int silent)
+{
+	t_list	*tmp;
+
+	if (!*stack_b)
+		return ;
+	tmp = *stack_a;
+	*stack_a = *stack_b;
+	*stack_b = (*stack_b)->next;
+	(*stack_a)->next = tmp;
+	if (!silent)
+		write(1, "pa\n", 3);
+}
+
+void	push_b(t_list **stack_a, t_list **stack_b, int silent)
+{
+	t_list	*tmp;
+
+	if (!*stack_a)
+		return ;
+	tmp = *stack_b;
+	*stack_b = *stack_a;
+	*stack_a = (*stack_a)->next;
+	(*stack_b)->next = tmp;
+	if (!silent)
+		write(1, "pb\n", 3);
+}
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   operations_rotations.c                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 14:40:57 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 14:41:03 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+void	rotate_a(t_list **stack_a, int silent)
+{
+	t_list	*tmp;
+	t_list	*last;
+
+	if (!*stack_a || !(*stack_a)->next)
+		return ;
+	tmp = *stack_a;
+	*stack_a = (*stack_a)->next;
+	tmp->next = NULL;
+	last = ft_lstlast(*stack_a);
+	last->next = tmp;
+	if (!silent)
+		write(1, "ra\n", 3);
+}
+
+void	reverse_rotate_a(t_list **stack_a, int silent)
+{
+	t_list	*tmp;
+	t_list	*before_last;
+
+	if (!*stack_a || !(*stack_a)->next)
+		return ;
+	before_last = *stack_a;
+	while (before_last->next->next)
+		before_last = before_last->next;
+	tmp = before_last->next;
+	before_last->next = NULL;
+	tmp->next = *stack_a;
+	*stack_a = tmp;
+	if (!silent)
+		write(1, "rra\n", 4);
+}
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   push_swap.h                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 14:43:12 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 14:58:46 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#ifndef PUSH_SWAP_H
+# define PUSH_SWAP_H
+
+# include <stdlib.h>
+# include <unistd.h>
+
+typedef struct s_list
+{
+	long			num;
+	struct s_list	*next;
+}	t_list;
+
+// args_utils.c
+t_list	*parse_args(char **argv);
+t_list	*check_args(int argc, char **argv);
+
+// errors_utils.c
+void	print_error(void);
+void	free_list(t_list **stack);
+void	free_split(char **split);
+void	free_all(char **split, t_list **stack);
+
+// list_utils.c
+t_list	*create_node(long number);
+void	add_to_list(t_list **stack, t_list *new_node);
+int		find_min(t_list *stack);
+int		find_max(t_list *stack);
+int		list_size(t_list *stack);
+
+// operations_basic.c
+void	swap_a(t_list **stack_a, int silent);
+void	swap_b(t_list **stack_b, int silent);
+void	swap_both(t_list **stack_a, t_list **stack_b, int silent);
+void	push_a(t_list **stack_a, t_list **stack_b, int silent);
+void	push_b(t_list **stack_a, t_list **stack_b, int silent);
+
+// operations_rotations.c
+void	rotate_a(t_list **stack_a, int silent);
+void	reverse_rotate_a(t_list **stack_a, int silent);
+
+// sorting_utils.c
+void	sort_stack(t_list **stack_a);
+// utils.c
+char	**split_string(const char *str, char delimiter);
+
+// args_utils.c
+int		parse_number_split(const char *str, char **split, t_list **stack);
+int		parse_number(const char *str, t_list **stack);
+t_list	*ft_lstlast(t_list *stack);
+
+// sorting_utils.c
+void	sort_three(t_list **stack);
+t_list	*move_to_stack_b(t_list **stack_a);
+t_list	**move_back_to_stack_a(t_list **stack_a, t_list **stack_b);
+int		find_index(t_list *stack, int value);
+char	*ft_strndup(const char *src, size_t n);
+// list_utils.c
+int		check_duplicates(t_list *stack);
+int		is_sorted(t_list *stack);
+
+#endif
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   sorting_utils.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 14:41:16 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 14:53:30 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+void	sort_stack(t_list **stack_a)
+{
+	t_list	*stack_b;
+	int		rot_count;
+
+	stack_b = NULL;
+	if (list_size(*stack_a) == 2)
+		swap_a(stack_a, 0);
+	else if (list_size(*stack_a) == 3)
+		sort_three(stack_a);
+	else
+	{
+		stack_b = move_to_stack_b(stack_a);
+		stack_a = move_back_to_stack_a(stack_a, &stack_b);
+		rot_count = find_index(*stack_a, find_min(*stack_a));
+		while ((*stack_a)->num != find_min(*stack_a))
+		{
+			if (rot_count < list_size(*stack_a) / 2)
+				rotate_a(stack_a, 0);
+			else
+				reverse_rotate_a(stack_a, 0);
+		}
+	}
+}
+
+void	sort_three(t_list **stack)
+{
+	int	first;
+	int	second;
+	int	third;
+
+	if (!stack || list_size(*stack) != 3)
+		return ;
+	first = (*stack)->num;
+	second = (*stack)->next->num;
+	third = (*stack)->next->next->num;
+	if (first > second && second < third && first < third)
+		swap_a(stack, 0);
+	else if (first > second && second > third)
+	{
+		swap_a(stack, 0);
+		reverse_rotate_a(stack, 0);
+	}
+	else if (first > second && second < third)
+		rotate_a(stack, 0);
+	else if (first < second && second > third && first < third)
+	{
+		swap_a(stack, 0);
+		rotate_a(stack, 0);
+	}
+	else if (first < second && second > third)
+		reverse_rotate_a(stack, 0);
+}
+
+t_list	*move_to_stack_b(t_list **stack_a)
+{
+	t_list	*stack_b;
+
+	stack_b = NULL;
+	while (list_size(*stack_a) > 3)
+		push_b(stack_a, &stack_b, 0);
+	return (stack_b);
+}
+
+t_list	**move_back_to_stack_a(t_list **stack_a, t_list **stack_b)
+{
+	while (*stack_b)
+		push_a(stack_a, stack_b, 0);
+	return (stack_a);
+}
+
+int	find_index(t_list *stack, int value)
+{
+	int	index;
+
+	index = 0;
+	while (stack)
+	{
+		if (stack->num == value)
+			return (index);
+		stack = stack->next;
+		index++;
+	}
+	return (-1);
+}
+
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   utils.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qacjl <qacjl@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/16 14:46:48 by qacjl             #+#    #+#             */
+/*   Updated: 2025/01/16 14:56:41 by qacjl            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "push_swap.h"
+
+int	count_words(const char *str, char delimiter)
+{
+	int	count;
+
+	count = 0;
+	while (*str)
+	{
+		while (*str == delimiter)
+			str++;
+		if (*str)
+			count++;
+		while (*str && *str != delimiter)
+			str++;
+	}
+	return (count);
+}
+
+char	*ft_strndup(const char *src, size_t n)
+{
+	char	*dup;
+	size_t	len;
+	size_t	i;
+
+	len = 0;
+	while (src[len] && len < n)
+		len++;
+	dup = malloc(len + 1);
+	if (!dup)
+		return (NULL);
+	i = 0;
+	while (i < len)
+	{
+		dup[i] = src[i];
+		i++;
+	}
+	dup[i] = '\0';
+	return (dup);
+}
+
+char	**split_string(const char *str, char delimiter)
+{
+	char	**result;
+	int		word_count;
+	int		i;
+	int		len;
+
+	if (!str)
+		return (NULL);
+	word_count = count_words(str, delimiter);
+	result = malloc((word_count + 1) * sizeof(char *));
+	if (!result)
+		return (NULL);
+	i = 0;
+	while (*str)
+	{
+		while (*str == delimiter)
+			str++;
+		len = 0;
+		while (str[len] && str[len] != delimiter)
+			len++;
+		if (len > 0)
+			result[i++] = ft_strndup(str, len);
+		str += len;
+	}
+	result[i] = NULL;
+	return (result);
+}
